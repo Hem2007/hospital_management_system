@@ -1,14 +1,14 @@
 // ─── MediTrack Shared Data Store ───────────────────────────────────────────
 
 const WARDS = [
-  { id: 'icu',      name: 'ICU',           total: 30,  icon: '🫀', color: '#ef4444' },
+  { id: 'icu',      name: 'ICU',           total: 100,  icon: '🫀', color: '#ef4444' },
   { id: 'general',  name: 'General',        total: 120, icon: '🛏️',  color: '#3b82f6' },
-  { id: 'pediatric',name: 'Pediatric',      total: 60,  icon: '👶', color: '#a855f7' },
-  { id: 'maternity',name: 'Maternity',      total: 40,  icon: '🤱', color: '#ec4899' },
+  { id: 'pediatric',name: 'Pediatric',      total: 100,  icon: '👶', color: '#a855f7' },
+  { id: 'maternity',name: 'Maternity',      total: 100,  icon: '🤱', color: '#ec4899' },
   { id: 'surgical', name: 'Surgical',       total: 50,  icon: '🔬', color: '#f59e0b' },
-  { id: 'emergency',name: 'Emergency',      total: 25,  icon: '🚨', color: '#ef4444' },
-  { id: 'ortho',    name: 'Orthopedic',     total: 45,  icon: '🦴', color: '#14b8a6' },
-  { id: 'oncology', name: 'Oncology',       total: 35,  icon: '🧬', color: '#6366f1' },
+  { id: 'emergency',name: 'Emergency',      total: 85,  icon: '🚨', color: '#ef4444' },
+  { id: 'ortho',    name: 'Orthopedic',     total: 109,  icon: '🦴', color: '#14b8a6' },
+  { id: 'oncology', name: 'Oncology',       total: 105,  icon: '🧬', color: '#6366f1' },
 ];
 
 // Persist state in sessionStorage

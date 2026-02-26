@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — MediTrack</title>
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <script src="../js/data.js"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏥</div>
+      <h2>MediTrack</h2>
+      <p>Admin Control Panel</p>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <a class="nav-item active" href="admin.html"><span class="icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="beds.html"><span class="icon">🛏️</span> Bed Management</a>
+      <a class="nav-item" href="patients.html"><span class="icon">👥</span> Patients</a>
+      <a class="nav-item" href="prediction.html"><span class="icon">📈</span> Predictions</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Admin</div>
+      <a class="nav-item" href="manage-users.html"><span class="icon">🔧</span> Manage Users</a>
+      <a class="nav-item" href="reports.html"><span class="icon">📋</span> Reports</a>
+      <a class="nav-item" href="alerts.html"><span class="icon">🔔</span> Alerts</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Admin</div>
+          <div class="user-role">Administrator</div>
+        </div>
+        <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Dashboard Overview</h1>
+        <div class="subtitle" id="datestr">Loading...</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="badge-btn" onclick="window.location.href='alerts.html'">
+          🔔 <span class="badge" id="alert-badge"></span>
+        </button>
+        <button class="btn btn-primary" onclick="window.location.href='beds.html'">+ Update Beds</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="cards-grid" id="stat-cards"></div>
+
+    <!-- Wards + Alerts -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;margin-bottom:24px">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">🏥 Ward Overview</div>
+          <button class="section-action" onclick="window.location.href='beds.html'">Manage →</button>
+        </div>
+        <div class="wards-grid" id="wards-grid"></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">🔔 Alerts</div>
+          <button class="section-action" onclick="window.location.href='alerts.html'">All</button>
+        </div>
+        <div id="alerts-list"></div>
+      </div>
+    </div>
+
+    <!-- Recent patients -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">👥 Recent Admissions</div>
+        <button class="section-action" onclick="window.location.href='patients.html'">View All →</button>
+      </div>
+      <div class="table-wrap">
+        <table id="patients-table">
+          <thead>
+            <tr>
+              <th>Patient ID</th>
+              <th>Name</th>
+              <th>Ward</th>
+              <th>Condition</th>
+              <th>Doctor</th>
+              <th>Admitted</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Auth check
+    const user = getUser();
+    if (user.role !== 'admin') window.location.href = 'dashboard.html';
+    document.getElementById('user-name').textContent = user.username;
+    document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+    document.getElementById('datestr').textContent = new Date().toLocaleDateString('en',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+    const state = getState();
+    const beds = state.beds;
+
+    // Compute totals
+    let totalBeds=0, totalOcc=0, totalAvail=0, totalMaint=0;
+    Object.values(beds).forEach(b => {
+      totalBeds += b.total;
+      totalOcc  += b.occupied;
+      totalMaint+= b.maintenance;
+    });
+    totalAvail = totalBeds - totalOcc - totalMaint;
+    const occRate = Math.round((totalOcc/totalBeds)*100);
+
+    // Stats
+    const statsData = [
+      { label:'Total Beds', value:totalBeds, sub:'Across all wards', icon:'🛏️', color:'var(--blue-l)' },
+      { label:'Available',  value:totalAvail, sub:'Ready for admission', icon:'✅', color:'var(--emerald)' },
+      { label:'Occupied',   value:totalOcc,  sub:'Currently in use', icon:'👤', color:'var(--amber)' },
+      { label:'Occupancy Rate', value:occRate+'%', sub:'Hospital wide', icon:'📊', color: occRate>85?'var(--red)':occRate>70?'var(--amber)':'var(--emerald)' },
+    ];
+    document.getElementById('stat-cards').innerHTML = statsData.map(s=>`
+      <div class="stat-card">
+        <div class="sc-label"><span>${s.icon}</span> ${s.label}</div>
+        <div class="sc-value" style="color:${s.color}">${s.value}</div>
+        <div class="sc-sub">${s.sub}</div>
+      </div>
+    `).join('');
+
+    // Wards grid
+    document.getElementById('wards-grid').innerHTML = WARDS.map(w=>{
+      const b = beds[w.id];
+      const avail = b.total - b.occupied - b.maintenance;
+      const rate = Math.round((b.occupied/b.total)*100);
+      const badgeCls = rate>85?'badge-crit':rate>70?'badge-warn':'badge-ok';
+      const badgeTxt = rate>85?'Critical':rate>70?'Warning':'Available';
+      const fillColor = rate>85?'var(--red)':rate>70?'var(--amber)':'var(--emerald)';
+      return `
+        <div class="ward-card">
+          <div class="ward-header">
+            <div class="ward-title">${w.icon} ${w.name}</div>
+            <span class="ward-badge ${badgeCls}">${badgeTxt}</span>
+          </div>
+          <div class="ward-numbers">
+            <div class="wn-item"><div class="wn-val" style="color:var(--emerald)">${avail}</div><div class="wn-lbl">Free</div></div>
+            <div class="wn-item"><div class="wn-val" style="color:var(--amber)">${b.occupied}</div><div class="wn-lbl">Used</div></div>
+            <div class="wn-item"><div class="wn-val">${b.total}</div><div class="wn-lbl">Total</div></div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${rate}%;background:${fillColor}"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Alerts
+    const unread = state.alerts.filter(a=>!a.read);
+    if(unread.length) document.getElementById('alert-badge').style.display='block';
+    document.getElementById('alerts-list').innerHTML = state.alerts.slice(0,5).map(a=>{
+      const dotColor = a.type==='warning'?'var(--amber)':a.type==='success'?'var(--emerald)':'var(--blue-l)';
+      return `
+        <div class="alert-item ${a.read?'':'alert-unread'}">
+          <div class="alert-dot" style="background:${dotColor}"></div>
+          <div>
+            <div class="alert-text">${a.msg}</div>
+            <div class="alert-time">${a.time}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Patients table
+    const tbody = document.querySelector('#patients-table tbody');
+    const conditionColors = { Stable:'var(--emerald)', Critical:'var(--red)', Recovering:'var(--blue-l)', Observation:'var(--amber)', 'Post-Surgery':'var(--purple)', Monitoring:'var(--teal)' };
+    tbody.innerHTML = state.patients.slice(0,8).map(p=>{
+      const wName = WARDS.find(w=>w.id===p.ward)?.name||p.ward;
+      const c = conditionColors[p.condition]||'var(--silver)';
+      return `
+        <tr>
+          <td style="color:var(--silver);font-family:monospace">${p.id}</td>
+          <td style="font-weight:600">${p.name}</td>
+          <td>${wName}</td>
+          <td><span class="condition-badge" style="background:${c}22;color:${c}">${p.condition}</span></td>
+          <td style="color:var(--silver)">${p.doctor}</td>
+          <td style="color:var(--silver)">${p.admitted}</td>
+        </tr>
+      `;
+    }).join('');
+  </script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerts — MediTrack</title>
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <script src="../js/data.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏥</div>
+      <h2>MediTrack</h2>
+      <p>Admin Control Panel</p>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <a class="nav-item" href="admin.html"><span class="icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="beds.html"><span class="icon">🛏️</span> Bed Management</a>
+      <a class="nav-item" href="patients.html"><span class="icon">👥</span> Patients</a>
+      <a class="nav-item" href="prediction.html"><span class="icon">📈</span> Predictions</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Admin</div>
+      <a class="nav-item" href="manage-users.html"><span class="icon">🔧</span> Manage Users</a>
+      <a class="nav-item" href="reports.html"><span class="icon">📋</span> Reports</a>
+      <a class="nav-item active" href="alerts.html"><span class="icon">🔔</span> Alerts</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Admin</div>
+          <div class="user-role">Administrator</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Alerts & Notifications</h1>
+        <div class="subtitle">System alerts and occupancy warnings</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="markAllRead()">✓ Mark All Read</button>
+        <button class="btn btn-primary" onclick="openAddAlert()">+ Create Alert</button>
+      </div>
+    </div>
+
+    <!-- Auto-generated alerts from ward thresholds -->
+    <div class="section" style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">⚡ Auto-Generated Threshold Alerts</div>
+      </div>
+      <div id="auto-alerts"></div>
+    </div>
+
+    <!-- Manual alerts -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🔔 All Alerts <span id="unread-count" style="color:var(--red);font-size:13px"></span></div>
+      </div>
+      <div id="alerts-list"></div>
+    </div>
+  </main>
+
+  <!-- Add alert modal -->
+  <div class="modal-overlay" id="add-modal">
+    <div class="modal">
+      <h3>🔔 Create Alert</h3>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:11px;color:var(--silver);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Alert Type</label>
+          <select class="input" id="a-type" style="width:100%">
+            <option value="warning">⚠️ Warning</option>
+            <option value="info">ℹ️ Info</option>
+            <option value="success">✅ Success</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--silver);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Message</label>
+          <input class="input" id="a-msg" placeholder="Alert message..." style="width:100%">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createAlert()">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const user = getUser();
+    if(user.role !== 'admin') window.location.href = 'dashboard.html';
+    document.getElementById('user-name').textContent = user.username;
+    document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+
+    let state = getState();
+
+    // Auto-generate threshold alerts from current bed data
+    function renderAutoAlerts() {
+      const autoAlerts = [];
+      WARDS.forEach(w=>{
+        const b = state.beds[w.id];
+        const rate = (b.occupied/b.total)*100;
+        if(rate>=90) autoAlerts.push({ward:w.name,icon:w.icon,rate:Math.round(rate),level:'critical',msg:`${w.name} ward is at ${Math.round(rate)}% capacity — CRITICAL`});
+        else if(rate>=75) autoAlerts.push({ward:w.name,icon:w.icon,rate:Math.round(rate),level:'warning',msg:`${w.name} ward is at ${Math.round(rate)}% capacity — WARNING`});
+      });
+      const container = document.getElementById('auto-alerts');
+      if(autoAlerts.length===0){
+        container.innerHTML = '<div style="color:var(--emerald);padding:16px 0">✅ All wards are within normal thresholds</div>';
+      } else {
+        container.innerHTML = autoAlerts.map(a=>{
+          const c = a.level==='critical'?'var(--red)':'var(--amber)';
+          return `
+            <div style="display:flex;align-items:center;gap:14px;padding:14px;background:${c}11;border:1px solid ${c}33;border-radius:10px;margin-bottom:10px">
+              <div style="font-size:22px">${a.icon}</div>
+              <div style="flex:1">
+                <div style="font-weight:600;color:${c}">${a.msg}</div>
+                <div style="font-size:12px;color:var(--silver);margin-top:3px">Recommend reviewing bed allocation</div>
+              </div>
+              <div style="font-size:22px;font-weight:700;color:${c}">${a.rate}%</div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderAlerts() {
+      const unread = state.alerts.filter(a=>!a.read).length;
+      document.getElementById('unread-count').textContent = unread > 0 ? `(${unread} unread)` : '';
+      document.getElementById('alerts-list').innerHTML = state.alerts.map(a=>{
+        const dotColor = a.type==='warning'?'var(--amber)':a.type==='success'?'var(--emerald)':'var(--blue-l)';
+        return `
+          <div class="alert-item ${a.read?'':'alert-unread'}" style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="alert-dot" style="background:${dotColor}"></div>
+              <div>
+                <div class="alert-text">${a.msg}</div>
+                <div class="alert-time">${a.time}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0">
+              ${!a.read?`<button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="markRead(${a.id})">Mark Read</button>`:''}
+              <button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteAlert(${a.id})">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('') || '<div style="color:var(--silver);padding:16px 0">No alerts</div>';
+    }
+
+    function markRead(id) {
+      const a = state.alerts.find(x=>x.id===id);
+      if(a) a.read=true;
+      saveState(state); renderAlerts();
+    }
+    function markAllRead() {
+      state.alerts.forEach(a=>a.read=true);
+      saveState(state); renderAlerts();
+      showToast('All alerts marked as read','success');
+    }
+    function deleteAlert(id) {
+      state.alerts = state.alerts.filter(a=>a.id!==id);
+      saveState(state); renderAlerts();
+    }
+    function openAddAlert() { document.getElementById('add-modal').classList.add('open'); }
+    function closeModal() { document.getElementById('add-modal').classList.remove('open'); }
+    function createAlert() {
+      const msg = document.getElementById('a-msg').value.trim();
+      if(!msg){ showToast('Please enter a message','error'); return; }
+      const newId = Math.max(0,...state.alerts.map(a=>a.id))+1;
+      state.alerts.unshift({id:newId, type:document.getElementById('a-type').value, msg, time:'Just now', read:false});
+      saveState(state); closeModal(); renderAlerts();
+      showToast('✅ Alert created','success');
+    }
+
+    function showToast(msg,type='success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(()=>t.classList.remove('show'),3000);
+    }
+
+    renderAutoAlerts(); renderAlerts();
+  </script>
+</body>
+</html>

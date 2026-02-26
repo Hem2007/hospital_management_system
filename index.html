@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediTrack — Hospital Bed Management System</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0a1628;
+      --navy-mid: #112040;
+      --blue: #1a56db;
+      --blue-light: #3b82f6;
+      --teal: #0ea5e9;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --silver: #94a3b8;
+      --white: #f8fafc;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background */
+    .bg-orbs {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      animation: float 8s ease-in-out infinite;
+    }
+    .orb1 { width: 500px; height: 500px; background: var(--blue); top: -100px; left: -100px; animation-delay: 0s; }
+    .orb2 { width: 400px; height: 400px; background: var(--teal); bottom: -50px; right: -50px; animation-delay: 3s; }
+    .orb3 { width: 300px; height: 300px; background: var(--emerald); top: 50%; left: 50%; animation-delay: 5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      33% { transform: translate(30px,-30px) scale(1.05); }
+      66% { transform: translate(-20px,20px) scale(0.95); }
+    }
+
+    /* Grid pattern */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none; z-index: 0;
+    }
+
+    .login-container {
+      position: relative; z-index: 1;
+      display: flex;
+      gap: 0;
+      width: 900px;
+      max-width: 95vw;
+      min-height: 560px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 40px 120px rgba(0,0,0,0.5);
+    }
+
+    /* Left panel */
+    .login-left {
+      flex: 1;
+      background: linear-gradient(135deg, #1a56db 0%, #0ea5e9 50%, #10b981 100%);
+      padding: 60px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-left::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .brand { position: relative; }
+    .brand-icon {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+    .brand h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 32px;
+      color: white;
+      line-height: 1.1;
+    }
+    .brand p {
+      color: rgba(255,255,255,0.75);
+      font-size: 14px;
+      margin-top: 8px;
+      font-weight: 300;
+    }
+    .stats-preview {
+      position: relative;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .stat-chip {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-chip .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .stat-chip .label { font-size: 12px; color: rgba(255,255,255,0.7); }
+    .stat-chip .value { font-size: 20px; font-weight: 600; color: white; }
+
+    /* Right panel */
+    .login-right {
+      flex: 1;
+      background: var(--navy-mid);
+      padding: 60px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .login-right h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+    .login-right p.sub { color: var(--silver); font-size: 14px; margin-bottom: 36px; }
+
+    .role-tabs {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 28px;
+      gap: 4px;
+    }
+    .role-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--silver);
+      border: none;
+      background: transparent;
+      color: var(--silver);
+    }
+    .role-tab.active {
+      background: var(--blue);
+      color: white;
+    }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--silver);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--white);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-group input:focus { border-color: var(--blue-light); }
+    .form-group input::placeholder { color: rgba(148,163,184,0.4); }
+
+    .error-msg {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #fca5a5;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: var(--blue);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-login:hover { background: var(--blue-light); transform: translateY(-1px); }
+    .btn-login:active { transform: translateY(0); }
+
+    .demo-creds {
+      margin-top: 24px;
+      padding: 14px;
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 10px;
+      font-size: 12px;
+      color: rgba(16,185,129,0.9);
+    }
+    .demo-creds strong { display: block; margin-bottom: 4px; color: var(--emerald); }
+
+    @media(max-width:700px) {
+      .login-container { flex-direction: column; }
+      .login-left { padding: 40px 32px; }
+      .login-right { padding: 40px 32px; }
+      .stats-preview { flex-direction: row; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="login-container">
+    <div class="login-left">
+      <div class="brand">
+        <div class="brand-icon">🏥</div>
+        <h1>MediTrack</h1>
+        <p>Hospital Bed Management & Prediction System</p>
+      </div>
+      <div class="stats-preview">
+        <div class="stat-chip">
+          <div class="dot" style="background:#10b981"></div>
+          <div>
+            <div class="label">Available Beds</div>
+            <div class="value" id="preview-available">142</div>
+          </div>
+        </div>
+        <div class="stat-chip">
+          <div class="dot" style="background:#f59e0b"></div>
+          <div>
+            <div class="label">Occupied Beds</div>
+            <div class="value" id="preview-occupied">287</div>
+          </div>
+        </div>
+        <div class="stat-chip">
+          <div class="dot" style="background:#ef4444"></div>
+          <div>
+            <div class="label">Occupancy Rate</div>
+            <div class="value">67%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-right">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to access the dashboard</p>
+
+      <div class="role-tabs">
+        <button class="role-tab active" onclick="setRole('admin')">👨‍💼 Administrator</button>
+        <button class="role-tab" onclick="setRole('user')">👤 Staff / Viewer</button>
+      </div>
+
+      <div class="error-msg" id="error-msg">Invalid credentials. Please try again.</div>
+
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" placeholder="Enter your username" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter your password" />
+      </div>
+      <button class="btn-login" onclick="login()">Sign In →</button>
+
+      <div class="demo-creds">
+        <strong>Demo Credentials</strong>
+        Admin: admin / admin123 &nbsp;|&nbsp; Staff: user / user123
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedRole = 'admin';
+
+    function setRole(role) {
+      selectedRole = role;
+      document.querySelectorAll('.role-tab').forEach((t,i) => {
+        t.classList.toggle('active', (i===0 && role==='admin') || (i===1 && role==='user'));
+      });
+    }
+
+    const USERS = {
+      admin: { password: 'admin123', role: 'admin' },
+      user:  { password: 'user123',  role: 'user'  },
+      staff: { password: 'staff123', role: 'user'  },
+    };
+
+    function login() {
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      const err = document.getElementById('error-msg');
+
+      if (USERS[u] && USERS[u].password === p && USERS[u].role === selectedRole) {
+        err.classList.remove('show');
+        sessionStorage.setItem('mt_user', JSON.stringify({ username: u, role: selectedRole }));
+        window.location.href = selectedRole === 'admin' ? 'pages/admin.html' : 'pages/dashboard.html';
+      } else {
+        err.classList.add('show');
+        document.getElementById('password').value = '';
+      }
+    }
+
+    document.addEventListener('keypress', e => { if(e.key==='Enter') login(); });
+
+    // Animate preview numbers
+    setInterval(() => {
+      const a = 120 + Math.floor(Math.random()*40);
+      const o = 429 - a;
+      document.getElementById('preview-available').textContent = a;
+      document.getElementById('preview-occupied').textContent = o;
+    }, 3000);
+  </script>
+</body>
+</html>

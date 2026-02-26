@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports — MediTrack</title>
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <script src="../js/data.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏥</div>
+      <h2>MediTrack</h2>
+      <p>Admin Control Panel</p>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <a class="nav-item" href="admin.html"><span class="icon">📊</span> Dashboard</a>
+      <a class="nav-item" href="beds.html"><span class="icon">🛏️</span> Bed Management</a>
+      <a class="nav-item" href="patients.html"><span class="icon">👥</span> Patients</a>
+      <a class="nav-item" href="prediction.html"><span class="icon">📈</span> Predictions</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Admin</div>
+      <a class="nav-item" href="manage-users.html"><span class="icon">🔧</span> Manage Users</a>
+      <a class="nav-item active" href="reports.html"><span class="icon">📋</span> Reports</a>
+      <a class="nav-item" href="alerts.html"><span class="icon">🔔</span> Alerts</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Admin</div>
+          <div class="user-role">Administrator</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Reports & Analytics</h1>
+        <div class="subtitle">14-day historical occupancy analysis</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print Report</button>
+      </div>
+    </div>
+
+    <!-- KPI summary -->
+    <div class="cards-grid" id="kpi-cards"></div>
+
+    <!-- Historical trend SVG chart -->
+    <div class="section" style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">📈 14-Day Occupancy Trend (Hospital-Wide)</div>
+      </div>
+      <div id="trend-chart"></div>
+    </div>
+
+    <!-- Per-ward summary table -->
+    <div class="section" style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">🏥 Ward Performance Summary</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Ward</th><th>Total Beds</th><th>Avg Occupancy</th><th>Peak Occupancy</th><th>Current</th><th>Status</th></tr>
+          </thead>
+          <tbody id="ward-summary-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Patient stats -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">👥 Patient Distribution by Ward</div>
+      </div>
+      <div id="patient-dist"></div>
+    </div>
+  </main>
+
+  <script>
+    const user = getUser();
+    if(user.role !== 'admin') window.location.href = 'dashboard.html';
+    document.getElementById('user-name').textContent = user.username;
+    document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+
+    const state = getState();
+    const beds = state.beds;
+
+    // KPI
+    let tB=0,tO=0,tA=0;
+    Object.values(beds).forEach(b=>{tB+=b.total;tO+=b.occupied;tA+=b.total-b.occupied-b.maintenance;});
+    const avgOcc = Math.round((tO/tB)*100);
+    document.getElementById('kpi-cards').innerHTML = [
+      {label:'Total Capacity',value:tB,icon:'🛏️',sub:'Across 8 wards',color:'var(--blue-l)'},
+      {label:'Available Beds',value:tA,icon:'✅',sub:'Ready now',color:'var(--emerald)'},
+      {label:'Occupancy Rate',value:avgOcc+'%',icon:'📊',sub:'Hospital-wide',color:avgOcc>80?'var(--red)':'var(--amber)'},
+      {label:'Total Patients',value:state.patients.length,icon:'👥',sub:'Current admissions',color:'var(--teal)'},
+    ].map(s=>`
+      <div class="stat-card">
+        <div class="sc-label">${s.icon} ${s.label}</div>
+        <div class="sc-value" style="color:${s.color}">${s.value}</div>
+        <div class="sc-sub">${s.sub}</div>
+      </div>
+    `).join('');
+
+    // Historical trend chart
+    const history = state.history;
+    // Group by date, sum all wards
+    const byDate = {};
+    history.forEach(h=>{
+      if(!byDate[h.date]) byDate[h.date] = {occupied:0,total:0};
+      byDate[h.date].occupied += h.occupied;
+      byDate[h.date].total += h.total;
+    });
+    const dates = Object.keys(byDate);
+    const rates = dates.map(d=>Math.round((byDate[d].occupied/byDate[d].total)*100));
+    const W=680,H=180,pL=40,pB=30,pT=20,pR=20;
+    const cW=W-pL-pR, cH=H-pT-pB;
+    const maxR=100;
+    // Build polyline
+    const pts = dates.map((d,i)=>{
+      const x = pL + (i/(dates.length-1))*cW;
+      const y = pT + cH - (rates[i]/maxR)*cH;
+      return `${x},${y}`;
+    }).join(' ');
+    // Fill polygon
+    const fill = `${pL},${pT+cH} ` + dates.map((d,i)=>{
+      const x = pL + (i/(dates.length-1))*cW;
+      const y = pT + cH - (rates[i]/maxR)*cH;
+      return `${x},${y}`;
+    }).join(' ') + ` ${pL+cW},${pT+cH}`;
+
+    let gridLines='', xlabels='', dots='';
+    for(let p=0;p<=100;p+=25){
+      const y2=pT+cH-(p/100)*cH;
+      gridLines+=`<line x1="${pL}" y1="${y2}" x2="${W-pR}" y2="${y2}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+      gridLines+=`<text x="${pL-5}" y="${y2+4}" text-anchor="end" fill="#94a3b8" font-size="9">${p}%</text>`;
+    }
+    dates.forEach((d,i)=>{
+      if(i%2===0){
+        const x=pL+(i/(dates.length-1))*cW;
+        xlabels+=`<text x="${x}" y="${H-8}" text-anchor="middle" fill="#94a3b8" font-size="9">${d}</text>`;
+      }
+      const x=pL+(i/(dates.length-1))*cW;
+      const y=pT+cH-(rates[i]/maxR)*cH;
+      const c=rates[i]>=85?'#ef4444':rates[i]>=70?'#f59e0b':'#10b981';
+      dots+=`<circle cx="${x}" cy="${y}" r="3" fill="${c}"/>`;
+    });
+
+    document.getElementById('trend-chart').innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px">
+        <defs>
+          <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        <polygon points="${fill}" fill="url(#grad)"/>
+        <polyline points="${pts}" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        ${dots}${xlabels}
+      </svg>
+    `;
+
+    // Ward summary table
+    document.getElementById('ward-summary-body').innerHTML = WARDS.map(w=>{
+      const wH = history.filter(h=>h.ward===w.id);
+      const avgR = Math.round(wH.reduce((a,h)=>a+h.occupied/h.total,0)/wH.length*100);
+      const peakR = Math.round(Math.max(...wH.map(h=>h.occupied/h.total))*100);
+      const currR = Math.round((beds[w.id].occupied/beds[w.id].total)*100);
+      const status = currR>=90?{l:'Critical',c:'var(--red)'}:currR>=75?{l:'High',c:'var(--amber)'}:{l:'Normal',c:'var(--emerald)'};
+      return `<tr>
+        <td><b>${w.icon} ${w.name}</b></td>
+        <td>${w.total}</td>
+        <td>${avgR}%</td>
+        <td>${peakR}%</td>
+        <td style="color:${currR>=85?'var(--red)':currR>=70?'var(--amber)':'var(--emerald)'};font-weight:600">${currR}%</td>
+        <td><span class="condition-badge" style="background:${status.c}22;color:${status.c}">${status.l}</span></td>
+      </tr>`;
+    }).join('');
+
+    // Patient distribution bar chart
+    const wardCounts = {};
+    state.patients.forEach(p=>{ wardCounts[p.ward]=(wardCounts[p.ward]||0)+1; });
+    const maxCount = Math.max(...Object.values(wardCounts));
+    document.getElementById('patient-dist').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${WARDS.map(w=>{
+          const count = wardCounts[w.id]||0;
+          const pct = maxCount>0?Math.round((count/maxCount)*100):0;
+          return `
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:110px;font-size:13px;flex-shrink:0">${w.icon} ${w.name}</div>
+              <div class="progress-bar" style="flex:1;height:10px">
+                <div class="progress-fill" style="width:${pct}%;background:${w.color||'var(--blue-l)'}"></div>
+              </div>
+              <div style="width:30px;text-align:right;font-size:13px;font-weight:600;color:var(--white)">${count}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  </script>
+</body>
+</html>

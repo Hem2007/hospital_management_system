@@ -8,25 +8,29 @@
   <script src="../js/data.js"></script>
 </head>
 <body>
+
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon">🏥</div>
       <h2>MediTrack</h2>
       <p>Admin Control Panel</p>
     </div>
+
     <div class="nav-section">
       <div class="nav-label">Main</div>
-      <a class="nav-item" href="admin.html"><span class="icon">📊</span> Dashboard</a>
-      <a class="nav-item" href="beds.html"><span class="icon">🛏️</span> Bed Management</a>
-      <a class="nav-item" href="patients.html"><span class="icon">👥</span> Patients</a>
-      <a class="nav-item" href="prediction.html"><span class="icon">📈</span> Predictions</a>
+      <a class="nav-item" href="admin.html">📊 Dashboard</a>
+      <a class="nav-item" href="beds.html">🛏️ Bed Management</a>
+      <a class="nav-item" href="patients.html">👥 Patients</a>
+      <a class="nav-item" href="prediction.html">📈 Predictions</a>
     </div>
+
     <div class="nav-section">
       <div class="nav-label">Admin</div>
-      <a class="nav-item active" href="manage-users.html"><span class="icon">🔧</span> Manage Users</a>
-      <a class="nav-item" href="reports.html"><span class="icon">📋</span> Reports</a>
-      <a class="nav-item" href="alerts.html"><span class="icon">🔔</span> Alerts</a>
+      <a class="nav-item active" href="manage-users.html">🔧 Manage Users</a>
+      <a class="nav-item" href="reports.html">📋 Reports</a>
+      <a class="nav-item" href="alerts.html">🔔 Alerts</a>
     </div>
+
     <div class="sidebar-footer">
       <div class="user-chip">
         <div class="user-avatar" id="user-avatar">A</div>
@@ -40,17 +44,16 @@
   </aside>
 
   <main class="main">
+
     <div class="topbar">
       <div>
         <h1>User Management</h1>
         <div class="subtitle">Manage system accounts and privileges</div>
       </div>
-      <div class="topbar-actions">
-        <button class="btn btn-primary" onclick="openModal()">+ Add User</button>
-      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add User</button>
     </div>
 
-    <!-- Privilege matrix -->
+    <!-- PRIVILEGE MATRIX -->
     <div class="section" style="margin-bottom:24px">
       <div class="section-header">
         <div class="section-title">🔐 Privilege Matrix</div>
@@ -58,33 +61,18 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Feature</th><th>Administrator</th><th>Staff / Viewer</th></tr>
+            <tr>
+              <th>Feature</th>
+              <th>Administrator</th>
+              <th>Staff / Viewer</th>
+            </tr>
           </thead>
-          <tbody>
-            ${[
-              ['View Dashboard','✅','✅'],
-              ['View Bed Availability','✅','✅'],
-              ['View Patients','✅','✅'],
-              ['View Predictions','✅','✅'],
-              ['Update Bed Counts','✅','❌'],
-              ['Admit Patients','✅','❌'],
-              ['Discharge Patients','✅','❌'],
-              ['Manage Alerts','✅','❌'],
-              ['Manage Users','✅','❌'],
-              ['Generate Reports','✅','❌'],
-            ].map(([f,a,u])=>`
-              <tr>
-                <td style="font-weight:500">${f}</td>
-                <td style="text-align:center;font-size:16px">${a}</td>
-                <td style="text-align:center;font-size:16px">${u}</td>
-              </tr>
-            `).join('')}
-          </tbody>
+          <tbody id="privilege-body"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- User table -->
+    <!-- USER TABLE -->
     <div class="section">
       <div class="section-header">
         <div class="section-title">👤 System Users</div>
@@ -92,35 +80,48 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Username</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+            <tr>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Last Login</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody id="users-body"></tbody>
         </table>
       </div>
     </div>
+
   </main>
 
-  <!-- Add user modal -->
+  <!-- ADD USER MODAL -->
   <div class="modal-overlay" id="add-modal">
     <div class="modal">
       <h3>➕ Add New User</h3>
+
       <div style="display:flex;flex-direction:column;gap:14px">
+
         <div>
-          <label style="font-size:11px;color:var(--silver);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Username</label>
-          <input class="input" id="m-username" placeholder="e.g. dr_patel" style="width:100%">
+          <label>Username</label>
+          <input class="input" id="m-username" placeholder="e.g. dr_patel">
         </div>
+
         <div>
-          <label style="font-size:11px;color:var(--silver);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Password</label>
-          <input class="input" type="password" id="m-password" placeholder="Password" style="width:100%">
+          <label>Password</label>
+          <input class="input" type="password" id="m-password" placeholder="Password">
         </div>
+
         <div>
-          <label style="font-size:11px;color:var(--silver);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Role</label>
-          <select class="input" id="m-role" style="width:100%">
+          <label>Role</label>
+          <select class="input" id="m-role">
             <option value="user">Staff / Viewer</option>
             <option value="admin">Administrator</option>
           </select>
         </div>
+
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" onclick="addUser()">Create User</button>
@@ -130,84 +131,160 @@
 
   <div class="toast" id="toast"></div>
 
-  <script>
-    const user = getUser();
-    if(user.role !== 'admin') window.location.href = 'dashboard.html';
-    document.getElementById('user-name').textContent = user.username;
-    document.getElementById('user-avatar').textContent = user.username[0].toUpperCase();
+<script>
 
-    // Privilege rows injected inline above (template literal doesn't work in script, so handle here)
-    const privRows = [
-      ['View Dashboard','✅','✅'],
-      ['View Bed Availability','✅','✅'],
-      ['View Patients','✅','✅'],
-      ['View Predictions','✅','✅'],
-      ['Update Bed Counts','✅','❌'],
-      ['Admit Patients','✅','❌'],
-      ['Discharge Patients','✅','❌'],
-      ['Manage Alerts','✅','❌'],
-      ['Manage Users','✅','❌'],
-      ['Generate Reports','✅','❌'],
-    ];
-    // The table was already rendered inline above, but let's manage users list from sessionStorage
-    let sysUsers = JSON.parse(sessionStorage.getItem('mt_sysusers')||'null') || [
+  // CHECK ADMIN ACCESS
+  const user = getUser();
+  if (!user || user.role !== 'admin') {
+    window.location.href = 'dashboard.html';
+  }
+
+  document.getElementById('user-name').textContent = user.username;
+  document.getElementById('user-avatar').textContent =
+    user.username[0].toUpperCase();
+
+  /* ==========================
+     PRIVILEGE MATRIX
+  =========================== */
+
+  const privRows = [
+    ['View Dashboard','✅','✅'],
+    ['View Bed Availability','✅','✅'],
+    ['View Patients','✅','✅'],
+    ['View Predictions','✅','✅'],
+    ['Update Bed Counts','✅','❌'],
+    ['Admit Patients','✅','❌'],
+    ['Discharge Patients','✅','❌'],
+    ['Manage Alerts','✅','❌'],
+    ['Manage Users','✅','❌'],
+    ['Generate Reports','✅','❌'],
+  ];
+
+  function renderPrivileges() {
+    document.getElementById('privilege-body').innerHTML =
+      privRows.map(([feature, admin, user]) => `
+        <tr>
+          <td style="font-weight:500">${feature}</td>
+          <td style="text-align:center">${admin}</td>
+          <td style="text-align:center">${user}</td>
+        </tr>
+      `).join('');
+  }
+
+  renderPrivileges();
+
+  /* ==========================
+     USER MANAGEMENT
+  =========================== */
+
+  let sysUsers =
+    JSON.parse(sessionStorage.getItem('mt_sysusers')) || [
       {id:1, username:'admin', role:'admin', status:'Active', lastLogin:'Just now'},
-      {id:2, username:'user',  role:'user',  status:'Active', lastLogin:'1 hour ago'},
-      {id:3, username:'staff', role:'user',  status:'Active', lastLogin:'3 hours ago'},
+      {id:2, username:'user', role:'user', status:'Active', lastLogin:'1 hour ago'},
+      {id:3, username:'staff', role:'user', status:'Active', lastLogin:'3 hours ago'}
     ];
-    function saveUsers() { sessionStorage.setItem('mt_sysusers', JSON.stringify(sysUsers)); }
 
-    function renderUsers() {
-      document.getElementById('users-body').innerHTML = sysUsers.map(u=>{
-        const roleColor = u.role==='admin'?'var(--blue-l)':'var(--emerald)';
-        const roleLabel = u.role==='admin'?'Administrator':'Staff / Viewer';
+  function saveUsers() {
+    sessionStorage.setItem('mt_sysusers', JSON.stringify(sysUsers));
+  }
+
+  function renderUsers() {
+    document.getElementById('users-body').innerHTML =
+      sysUsers.map(u => {
+
+        const roleLabel =
+          u.role === 'admin' ? 'Administrator' : 'Staff / Viewer';
+
         const canDelete = u.username !== 'admin';
-        return `<tr>
-          <td>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--teal));
-                display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">${u.username[0].toUpperCase()}</div>
-              <span style="font-weight:600">${u.username}</span>
-            </div>
-          </td>
-          <td><span class="condition-badge" style="background:${roleColor}22;color:${roleColor}">${roleLabel}</span></td>
-          <td><span style="color:var(--emerald);font-size:12px">● ${u.status}</span></td>
-          <td style="color:var(--silver)">${u.lastLogin}</td>
-          <td>
-            ${canDelete?`<button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteUser(${u.id})">Remove</button>`:'<span style="color:var(--silver);font-size:12px">Protected</span>'}
-          </td>
-        </tr>`;
+
+        return `
+          <tr>
+            <td>
+              <strong>${u.username}</strong>
+            </td>
+            <td>${roleLabel}</td>
+            <td style="color:green">● ${u.status}</td>
+            <td>${u.lastLogin}</td>
+            <td>
+              ${canDelete
+                ? `<button class="btn btn-danger"
+                     onclick="deleteUser(${u.id})">
+                     Remove
+                   </button>`
+                : `<span style="color:gray">Protected</span>`
+              }
+            </td>
+          </tr>
+        `;
       }).join('');
-    }
+  }
 
-    function deleteUser(id) {
-      if(!confirm('Remove this user?')) return;
-      sysUsers = sysUsers.filter(u=>u.id!==id);
-      saveUsers(); renderUsers();
-      showToast('✅ User removed','success');
-    }
+  renderUsers();
 
-    function openModal() { document.getElementById('add-modal').classList.add('open'); }
-    function closeModal() { document.getElementById('add-modal').classList.remove('open'); }
+  function deleteUser(id) {
+    if (!confirm('Remove this user?')) return;
 
-    function addUser() {
-      const username = document.getElementById('m-username').value.trim();
-      const password = document.getElementById('m-password').value.trim();
-      if(!username||!password){ showToast('Please fill all fields','error'); return; }
-      const newId = Math.max(...sysUsers.map(u=>u.id))+1;
-      sysUsers.push({id:newId, username, role:document.getElementById('m-role').value, status:'Active', lastLogin:'Never'});
-      saveUsers(); closeModal(); renderUsers();
-      showToast('✅ User created: '+username,'success');
-    }
-
-    function showToast(msg,type='success') {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.className = `toast ${type} show`;
-      setTimeout(()=>t.classList.remove('show'),3000);
-    }
-
+    sysUsers = sysUsers.filter(u => u.id !== id);
+    saveUsers();
     renderUsers();
-  </script>
+    showToast('User removed');
+  }
+
+  function openModal() {
+    document.getElementById('add-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('add-modal').classList.remove('open');
+  }
+
+  function addUser() {
+    const username =
+      document.getElementById('m-username').value.trim();
+
+    const password =
+      document.getElementById('m-password').value.trim();
+
+    const role =
+      document.getElementById('m-role').value;
+
+    if (!username || !password) {
+      showToast('Please fill all fields');
+      return;
+    }
+
+    if (sysUsers.find(u => u.username === username)) {
+      showToast('Username already exists');
+      return;
+    }
+
+    const newId =
+      sysUsers.length
+        ? Math.max(...sysUsers.map(u => u.id)) + 1
+        : 1;
+
+    sysUsers.push({
+      id: newId,
+      username,
+      role,
+      status: 'Active',
+      lastLogin: 'Never'
+    });
+
+    saveUsers();
+    closeModal();
+    renderUsers();
+    showToast('User created: ' + username);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+</script>
+
 </body>
 </html>
